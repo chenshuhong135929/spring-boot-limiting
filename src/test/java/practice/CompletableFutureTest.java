@@ -12,11 +12,11 @@ public class CompletableFutureTest {
 
 
   public static void main(String[] args) throws ExecutionException, InterruptedException {
-    CompletableFuture<String> future = completableFutureHello();
-    future.get();
+ completableFutureHello();
+
   }
 
-  private static CompletableFuture<String> completableFutureHello() {
+  private static  void  completableFutureHello() {
     //无参调用
   //  CompletableFuture<String> future = CompletableFuture.supplyAsync(CompletableFutureTest::hello);
     //有参调用
@@ -28,7 +28,7 @@ public class CompletableFutureTest {
     future.exceptionally(x->{
       throw new RuntimeException(x);
     });
-    return future;
+
   }
 
 
