@@ -2,6 +2,12 @@ package practice;
 
 import org.junit.Test;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.*;
+
 /**
  * @Auther ChenShuHong
  * @Date 2021-11-11 10:09
@@ -38,8 +44,65 @@ import org.junit.Test;
  * 守护线程（类似任务定时器，等其他线程都结束的时候，它也必须结束，jvm退出）
  *  thread.setDaemon(true);
  *
+ * volatile（告诉服务器每次去拿最新的值）
+ * volatile关键字的目的是告诉虚拟机：
+ *     每次访问变量时，总是获取主内存的最新值；
+ *     每次修改变量后，立刻回写到主内存。
  *
  *
+ * （wait  notify 用于多线程协作运行 ）
+ * wait  等待
+ * notify  唤醒
+ * notifyAll 唤醒所有线程
+ *
+ * 用reentrantLock (重入锁)
+ * 或者锁   condition （在reentrantLock  中获取到的     .newCondition）
+ * await ：等待  （跟synchronized 的wait等价）
+ * signal ： 信号  （跟synchronized  的notify等价）
+ * signalAll ： 全部信号  （跟synchronized 的notifyAll 等价）
+ *
+ *
+ *
+ * ReentrantReadwriteLock (重入读写锁)
+ * 使用ReadWriteLock可以提高读取效率：
+ * ReadWriteLock只允许一个线程写入
+ * ReadWriteLock允许多个线程在没有写入时同时读取
+ * ReadWriteLock适合读多写少的场景
+ *
+ *
+ *
+ * StampedLock提供了乐观读锁，可取代ReadWriteLock以进一步提升并发性能；
+ *
+ * StampedLock是不可重入锁。
+ *
+ *
+ *
+ *
+ * concurrent 的应用
+ *
+ *  新建一个线程安全
+ *  Map m = new ConcurrentHashMap();
+ *
+ *  将旧的容器改成线程安全的容器  concurrent提供的转换器
+ *   Map unsafeMap = new HashMap();
+ *   Map threadSafeMap = Collections.synchronizedMap(unsafeMap);
+ *
+ *
+ *
+ *
+ *
+ *
+ *   atomic操作
+ *    使用java.util.concurrent.atomic提供的原子操作可以简化多线程编程：
+ *
+ *         原子操作实现了无锁的线程安全；
+ *
+ *         适用于计数器，累加器等。
+ *
+ *    增加值并返回新值：int addAndGet(int delta)
+ *    加1后返回新值：int incrementAndGet()
+ *    获取当前值：int get()
+ *    用CAS方式设置：int compareAndSet(int expect, int update)
  */
 public class ThreadTest {
 
@@ -301,4 +364,314 @@ public class ThreadTest {
     }
   }
 
+
+  /**
+   *
+   * @throws InterruptedException
+   * （wait  notify 用于多线程协作运行 ）
+   * wait  等待
+   * notify  唤醒
+   * notifyAll 唤醒所有线程
+   *
+   *
+   */
+
+  @Test
+  public void notifyWaitThread() throws InterruptedException {
+    List<Thread> ts = new ArrayList();
+    TaskQueue taskQueue = new TaskQueue();
+    Thread t1= new Thread(()->{
+
+      while (true){
+        String task = null;
+        try {
+          task = taskQueue.getTask();
+        } catch (InterruptedException e) {
+          return;
+        }
+        System.out.println("获取到的数据：    "+ task);
+      }
+
+    });
+    ts.add(t1);
+
+    Thread t2 = new Thread(()->{
+
+
+      for(int i = 0; i<10; i++){
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        taskQueue.addTask("hello +"+ i);
+      }
+
+
+    });
+    ts.add(t2);
+    t1.start();
+    t2.start();
+    t2.join();
+    ts.stream().forEach(x->x.interrupt());
+
+
+  }
+
+
+
+  /**
+   *   notify  唤醒线程
+   *   wait    等待线程
+   *
+   *
+   */
+
+  class TaskQueue{
+   Queue<String> queue = new LinkedList();
+   public synchronized void addTask(String s ){
+     this.queue.add(s);
+     //唤醒
+     this.notify();
+   }
+
+
+   public synchronized String getTask() throws InterruptedException {
+     while (queue.isEmpty()){
+       //等待
+        this.wait();
+     }
+     return  queue.remove();
+   }
+
+
+  }
+
+  /**
+   * synchronized 是java语言层面提供的语法，所以不需要考虑异常，ReentrantLock是java 代码实现的锁，我们需要在finally中正确释放锁
+   * ReentrantLock 是可重入锁，它和synchronized 一样，一个线程可以多次获取同一个锁
+   * 和synchronized不同的是，ReentrantLock可以尝试获取锁
+   * ReentrantLock比synchronized获取锁更安全
+   *
+   */
+
+  static class   ReenTranLockCount{
+
+    Lock lock = new ReentrantLock();
+    public static  volatile  int  count=0;
+
+    public void add(){
+      try {
+        lock.lock();
+        count ++;
+      }finally {
+        lock.unlock();
+      }
+
+
+    }
+
+    public void dec(){
+      try {
+      lock.lock();
+      count--;
+      }finally {
+        lock.unlock();
+      }
+
+    }
+
+    public static int get(){
+      return  count;
+    }
+  }
+
+
+  /**
+   *
+   * @throws InterruptedException
+   *
+   * 用reentrantLock (重入锁)
+   * await ：等待  （跟synchronized 的wait等价）
+   * signal ： 信号  （跟synchronized  的notify等价）
+   * signalAll ： 全部信号  （跟synchronized 的notifyAll 等价）
+   *
+   */
+
+  @Test
+  public void conditionThread() throws InterruptedException {
+    List<Thread> list= new ArrayList();
+
+    TaskQueueCondition t = new TaskQueueCondition();
+    Thread t1 = new Thread(()->{
+      while (true){
+        String s = t.get();
+        if(s==null){
+          return;
+        }
+        System.out.println("得到的数据：    "+s);
+      }
+
+    });
+
+    list.add(t1);
+
+    Thread t2 = new Thread(()->{
+     for(int i = 0;i<10; i++){
+       try {
+         Thread.sleep(10);
+         t.add("data "+i);
+       } catch (InterruptedException e) {
+         e.printStackTrace();
+       }
+
+     }
+    });
+
+    list.add(t2);
+    t1.start();
+    t2.start();
+    t2.join();
+
+    list.stream().forEach(x->x.interrupt());
+
+
+  }
+
+  class TaskQueueCondition{
+
+    private final   Lock lock =  new ReentrantLock();
+    private final Condition condition = lock.newCondition();
+
+   Queue<String> q = new LinkedList();
+
+   public void add(String s){
+     try {
+       lock.lock();
+       q.add(s);
+       condition.signal();
+     }finally {
+       lock.unlock();
+     }
+
+   }
+
+
+   public String get(){
+     try {
+       lock.lock();
+       while (q.isEmpty()){
+         condition.await();
+       }
+       return  q.remove();
+
+     } catch (InterruptedException e) {
+
+     } finally {
+       lock.unlock();
+     }
+    return null;
+   }
+  }
+
+
+  /**
+   *
+   * readwriteLock(读写锁的作用：可以多线程进行读取，写：允许一个线程进行写入，提供读的效率)
+   */
+  static class readWriteLockCount{
+
+    //读写所对象
+    private final ReadWriteLock  rwlock = new ReentrantReadWriteLock();
+    private final Lock rlock = rwlock.readLock();
+    private final Lock wlock = rwlock.writeLock();
+
+    public static int  count =0;
+
+    public void add(){
+      try {
+        wlock.lock();
+        count++;
+      }finally {
+        wlock.unlock();
+      }
+
+
+    }
+
+    public int get(){
+      try {
+        rlock.lock();
+        return  count;
+      }finally {
+        rlock.unlock();
+      }
+
+    }
+
+  }
+
+  /**
+   * 是用读的过程中也允许获取写锁后写入
+   *
+   * 先使用乐观锁，然后判断版本号，如果版本号一致就通过，提高效率，如果版本号不一致，使用悲观锁从新获取数据
+   *
+   */
+  class Point {
+    private final StampedLock stampedLock = new StampedLock();
+
+    private double x;
+    private double y;
+
+    public void move(double deltaX, double deltaY) {
+      long stamp = stampedLock.writeLock(); // 获取写锁
+      try {
+        x += deltaX;
+        y += deltaY;
+      } finally {
+        stampedLock.unlockWrite(stamp); // 释放写锁
+      }
+    }
+
+    public double distanceFromOrigin() {
+      long stamp = stampedLock.tryOptimisticRead(); // 获得一个乐观读锁
+      // 注意下面两行代码不是原子操作
+      // 假设x,y = (100,200)
+      double currentX = x;
+      // 此处已读取到x=100，但x,y可能被写线程修改为(300,400)
+      double currentY = y;
+      // 此处已读取到y，如果没有写入，读取是正确的(100,200)
+      // 如果有写入，读取是错误的(100,400)
+      if (!stampedLock.validate(stamp)) { // 检查乐观读锁后是否有其他写锁发生
+        stamp = stampedLock.readLock(); // 获取一个悲观读锁
+        try {
+          currentX = x;
+          currentY = y;
+        } finally {
+          stampedLock.unlockRead(stamp); // 释放悲观读锁
+        }
+      }
+      return Math.sqrt(currentX * currentX + currentY * currentY);
+    }
+  }
+
+  /**
+   * 使用java.util.concurrent.atomic提供的原子操作可以简化多线程编程：
+   *
+   *     原子操作实现了无锁的线程安全；
+   *
+   *     适用于计数器，累加器等。
+   *
+   增加值并返回新值：int addAndGet(int delta)
+   加1后返回新值：int incrementAndGet()
+   获取当前值：int get()
+   用CAS方式设置：int compareAndSet(int expect, int update)
+
+   */
+  @Test
+  public void atomicThread(){
+    AtomicLong atomicLong = new AtomicLong();
+    System.out.println(atomicLong.addAndGet(1));
+    System.out.println(atomicLong.incrementAndGet());
+  }
 }
