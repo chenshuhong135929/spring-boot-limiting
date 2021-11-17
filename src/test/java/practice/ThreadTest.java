@@ -103,6 +103,13 @@ import java.util.concurrent.locks.*;
  *    加1后返回新值：int incrementAndGet()
  *    获取当前值：int get()
  *    用CAS方式设置：int compareAndSet(int expect, int update)
+ *
+ *
+ *    ThreadLocal表示线程的“局部变量”，它确保每个线程的ThreadLocal变量都是各自独立的；
+ *
+ * ThreadLocal适合在一个线程的处理流程中保持上下文（避免了同一参数在所有方法中传递）；
+ *
+ * 使用ThreadLocal要用try ... finally结构，并在finally中清除。
  */
 public class ThreadTest {
 
@@ -673,5 +680,48 @@ public class ThreadTest {
     AtomicLong atomicLong = new AtomicLong();
     System.out.println(atomicLong.addAndGet(1));
     System.out.println(atomicLong.incrementAndGet());
+  }
+
+
+  /**
+   * ThreadLocal  的应用
+   *  实现了接口AutoCloseable
+   *  为了保证能释放ThreadLocal关联的实例，我们可以通过AutoCloseable接口配合try (resource) {...}结构，让编译器自动为我们关闭。例如，一个保存了当前用户名的ThreadLocal可以封装为一个UserContext对象：
+   *
+   *
+   */
+
+  @Test
+  public void threadLocalTest() throws InterruptedException {
+    Thread t = new Thread(()->{
+      //ThreadLocal的释放交给编译器
+      try (UserContext  ctx = new UserContext("Bob")) {
+        // 可任意调用UserContext.currentUser():
+        String currentUser = UserContext.currentUser();
+        System.out.println(currentUser);
+      } // 在此自动调用UserContext.close()方法释放ThreadLocal关联对象
+
+    });
+    t.start();
+    t.join();
+
+  }
+
+  static class UserContext implements AutoCloseable {
+
+    static final ThreadLocal<String> ctx = new ThreadLocal<>();
+
+    public UserContext(String user) {
+      ctx.set(user);
+    }
+
+    public static String currentUser() {
+      return ctx.get();
+    }
+
+    @Override
+    public void close() {
+      ctx.remove();
+    }
   }
 }
