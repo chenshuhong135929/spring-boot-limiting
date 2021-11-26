@@ -1,0 +1,9 @@
+
+
+
+自定义注解说明：
+
+Java使用@interface定义注解：
+可定义多个参数和默认值，核心参数使用value名称；
+必须设置@Target来指定Annotation可以应用的范围；
+应当设置@Retention(RetentionPolicy.RUNTIME)便于运行期读取该Annotation。
