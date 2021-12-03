@@ -145,9 +145,6 @@ public class FileIoTest {
           fileDir.mkdirs();
         }
 
-
-
-        System.out.println("dd"+target.getPath()+File.separator+entry.getName());
         int size;
         byte[] buffer = new byte[2048];
         try (FileOutputStream fos =
