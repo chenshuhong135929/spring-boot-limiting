@@ -4,6 +4,8 @@ package practice;
 import com.google.common.base.Charsets;
 import org.junit.Test;
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -48,6 +50,16 @@ import java.util.zip.ZipOutputStream;
  *     可以把一个OutputStream和任意个FilterOutputStream组合。
  *
  *     Filter模式可以在运行期动态增加功能（又称Decorator模式）。
+ *
+ *
+ *
+ *
+ *
+ *   把资源存储在classpath中可以避免文件路径依赖；
+ *
+ *   Class对象的getResourceAsStream()可以从classpath中读取指定资源；
+ *
+ *  根据classpath读取资源时，需要检查返回的InputStream是否为null。
  */
 public class FileIoTest {
 
@@ -162,5 +174,27 @@ public class FileIoTest {
       e.printStackTrace();
     }
   }
+
+
+  @Test
+  public void test3() throws FileNotFoundException {
+
+    OutputStream outputStream  = new FileOutputStream(new File("C:\\Users\\Administrator\\Desktop\\logback-spring.xml"));
+
+    try (InputStream input = getClass().getResourceAsStream("/logback-spring.xml")) {
+      byte[] b = new byte[1024];
+      int i = 0;
+      while ((i = input.read(b)) != -1) {
+           outputStream.write(b);
+           System.out.println(new String(b));
+           Arrays.fill(b, (byte) 0);
+         }
+
+      // TODO:
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
 
 }
