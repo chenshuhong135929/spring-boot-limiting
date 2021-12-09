@@ -72,8 +72,9 @@ public class FileIoTest {
 
 
     byte [] buff = new byte[1024];
-    while (fileInputStream.read(buff)!=-1){
-           fileOutputStream.write(buff);
+    int i=0;
+    while ((i=fileInputStream.read(buff))!=-1){
+           fileOutputStream.write(buff,0,i);
     }
 
     fileInputStream.close();
@@ -185,9 +186,9 @@ public class FileIoTest {
       byte[] b = new byte[1024];
       int i = 0;
       while ((i = input.read(b)) != -1) {
-           outputStream.write(b);
-           System.out.println(new String(b));
-           Arrays.fill(b, (byte) 0);
+           System.out.println(i);
+           outputStream.write(b,0,i);
+
          }
 
       // TODO:

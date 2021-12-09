@@ -1,9 +1,84 @@
 
 
+java 8大类型
 
+byte short int long boolean char float  double
+
+192.168.1.101
 自定义注解说明：
 
 Java使用@interface定义注解：
 可定义多个参数和默认值，核心参数使用value名称；
 必须设置@Target来指定Annotation可以应用的范围；
 应当设置@Retention(RetentionPolicy.RUNTIME)便于运行期读取该Annotation。
+
+
+
+
+
+
+Reader定义了所有字符输入流的超类：
+    FileReader实现了文件字符流输入，使用时需要指定编码；
+    CharArrayReader和StringReader可以在内存中模拟一个字符流输入。
+Reader是基于InputStream构造的：可以通过InputStreamReader在指定编码的同时将任何InputStream转换为Reader。
+总是使用try (resource)保证Reader正确关闭。
+
+
+
+
+Writer定义了所有字符输出流的超类：
+    FileWriter实现了文件字符流输出；
+    CharArrayWriter和StringWriter在内存中模拟一个字符流输出。
+使用try (resource)保证Writer正确关闭。
+Writer是基于OutputStream构造的，可以通过OutputStreamWriter将OutputStream转换为Writer，转换时需要指定编码。
+
+PrintStream是一种能接收各种数据类型的输出，打印数据时比较方便：
+    System.out是标准输出；
+    System.err是标准错误输出。
+PrintWriter是基于Writer的输出。
+
+
+
+
+
+在编写日期和时间的程序前，我们要准确理解日期、时间和时刻的概念。
+由于存在本地时间，我们需要理解时区的概念，并且必须牢记由于夏令时的存在，同一地区用GMT/UTC和城市表示的时区可能导致时间不同。
+计算机通过Locale来针对当地用户习惯格式化日期、时间、数字、货币等。
+计算机表示的时间是以整数表示的时间戳存储的，即Epoch Time，Java使用long型来表示以毫秒为单位的时间戳，通过System.currentTimeMillis()获取当前时间戳。
+
+
+
+Java有两套日期和时间的API：
+    旧的Date、Calendar和TimeZone；
+    新的LocalDateTime、ZonedDateTime、ZoneId等。
+分别位于java.util和java.time包中。
+
+
+
+
+ZonedDateTime是带时区的日期和时间，可用于时区转换；
+ZonedDateTime和LocalDateTime可以相互转换。
+
+
+
+对ZonedDateTime或LocalDateTime进行格式化，需要使用DateTimeFormatter类；
+DateTimeFormatter可以通过格式化字符串和Locale对日期和时间进行定制输出。
+Instant表示高精度时间戳，它可以和ZonedDateTime以及long互相转换。
+
+
+JUnit是一个单元测试框架，专门用于运行我们编写的单元测试：
+一个JUnit测试包含若干@Test方法，并使用Assertions进行断言，注意浮点数assertEquals()要指定delta。
+
+
+编写Fixture是指针对每个@Test方法，编写@BeforeEach方法用于初始化测试资源，编写@AfterEach用于清理测试资源；
+必要时，可以编写@BeforeAll和@AfterAll，使用静态变量来初始化耗时的资源，并且在所有@Test方法的运行前后仅执行一次。
+
+
+
+
+
+
+
+
+
+
