@@ -1,4 +1,4 @@
-package DesignPatterns.methodfactory;
+package DesignPatterns.abstractfactory;
 
 /**
  * @Auther ChenShuHong

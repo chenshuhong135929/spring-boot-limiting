@@ -1,4 +1,4 @@
-package DesignPatterns.methodfactory;
+package DesignPatterns.abstractfactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
