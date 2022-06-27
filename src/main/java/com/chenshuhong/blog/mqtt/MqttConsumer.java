@@ -23,7 +23,7 @@ public class MqttConsumer {
         return message -> {
             String topic = message.getHeaders().get(MqttConfig.RECEIVED_TOPIC_KEY).toString();
             LOGGER.info("[{}]主题接收到消息:{}", topic, message.getPayload().toString());
-            mqttSender.sendToMqtt(message.getPayload().toString());
+
         };
     }
 }
